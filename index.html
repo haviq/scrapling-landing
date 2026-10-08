@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Scrapling - Turn any website into structured data</title>
+<meta name="description" content="Scrapling is a self-hosted web data platform. Extract structured data from any site, find local business leads, and monitor pages on a schedule." />
+<style>
+  :root{
+    --bg:#050608;
+    --bg2:#0a0c12;
+    --card:rgba(255,255,255,.035);
+    --border:rgba(255,255,255,.09);
+    --accent:#22d3ee;
+    --accent2:#a78bfa;
+    --ok:#22c55e;
+    --txt:#f4f6f8;
+    --dim:#9aa3b2;
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;
+    background:var(--bg);color:var(--txt);line-height:1.6;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(900px circle at 12% -5%,rgba(34,211,238,.13),transparent 55%),
+      radial-gradient(800px circle at 88% 8%,rgba(167,139,250,.11),transparent 55%);
+  }
+  .grid-bg{
+    position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35;
+    background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+    background-size:56px 56px;
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 40%,transparent 100%);
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px;position:relative;z-index:1}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:rgba(5,6,8,.72);border-bottom:1px solid var(--border)}
+  nav .inner{max-width:1120px;margin:0 auto;padding:15px 22px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.08rem;letter-spacing:-.02em;color:var(--txt);text-decoration:none}
+  .logo .mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;color:#050608;font-weight:900;font-size:.82rem}
+  .navlinks{display:flex;gap:26px;align-items:center}
+  .navlinks a{color:var(--dim);text-decoration:none;font-size:.9rem;transition:color .2s}
+  .navlinks a:hover{color:var(--txt)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    border-radius:11px;padding:12px 24px;font-weight:700;font-size:.9rem;
+    cursor:pointer;border:none;text-decoration:none;transition:.2s;white-space:nowrap;
+  }
+  .btn.primary{background:linear-gradient(135deg,var(--accent),#0891b2);color:#04121a}
+  .btn.primary:hover{transform:translateY(-1px);box-shadow:0 8px 30px -8px rgba(34,211,238,.55)}
+  .btn.ghost{background:var(--card);color:var(--txt);border:1px solid var(--border)}
+  .btn.ghost:hover{border-color:rgba(255,255,255,.22)}
+  .btn.sm{padding:9px 18px;font-size:.84rem}
+
+  /* hero */
+  header.hero{padding:88px 0 64px;text-align:center;position:relative;z-index:1}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;font-size:.76rem;font-weight:600;
+    padding:7px 15px;border-radius:99px;background:var(--card);border:1px solid var(--border);
+    color:var(--dim);margin-bottom:26px;letter-spacing:.01em;
+  }
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+  h1{font-size:clamp(2.1rem,5.4vw,3.7rem);font-weight:800;letter-spacing:-.035em;line-height:1.08;margin-bottom:22px}
+  h1 .grad{background:linear-gradient(100deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{font-size:clamp(1rem,2.2vw,1.18rem);color:var(--dim);max-width:660px;margin:0 auto 34px;line-height:1.65}
+  .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .hero-note{margin-top:20px;font-size:.82rem;color:var(--dim);font-family:var(--mono)}
+
+  /* terminal mock */
+  .term{
+    margin:64px auto 0;max-width:760px;text-align:left;
+    background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
+    border:1px solid var(--border);border-radius:16px;overflow:hidden;
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.9);
+  }
+  .term .bar{display:flex;align-items:center;gap:7px;padding:13px 16px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.35)}
+  .term .bar i{width:11px;height:11px;border-radius:50%;display:block}
+  .term .bar .t{margin-left:12px;font-size:.76rem;color:var(--dim);font-family:var(--mono)}
+  .term .body{padding:20px 22px;font-family:var(--mono);font-size:.82rem;line-height:1.85;overflow-x:auto}
+  .term .body .c-dim{color:#6b7280}
+  .term .body .c-ok{color:var(--ok)}
+  .term .body .c-ac{color:var(--accent)}
+  .term .body .c-pu{color:var(--accent2)}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:70px 0 0}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:22px 20px;text-align:center}
+  .stat .n{font-size:1.9rem;font-weight:800;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em}
+  .stat .l{font-size:.74rem;color:var(--dim);text-transform:uppercase;letter-spacing:.09em;margin-top:4px;font-weight:600}
+
+  /* sections */
+  section{padding:86px 0;position:relative;z-index:1}
+  .eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+  h2{font-size:clamp(1.6rem,3.6vw,2.35rem);font-weight:800;letter-spacing:-.03em;line-height:1.18;margin-bottom:16px}
+  .lead{color:var(--dim);max-width:600px;font-size:1.02rem}
+  .center{text-align:center}.center .lead{margin:0 auto}
+
+  /* problem */
+  .problem{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center}
+  .prob-list{display:flex;flex-direction:column;gap:16px}
+  .prob{display:flex;gap:14px;align-items:flex-start}
+  .prob .x{flex-shrink:0;width:26px;height:26px;border-radius:8px;background:rgba(239,68,68,.12);color:#ef4444;display:grid;place-items:center;font-weight:800;font-size:.85rem}
+  .prob.solve .x{background:rgba(34,197,94,.13);color:var(--ok)}
+  .prob p{color:var(--dim);font-size:.95rem}
+  .prob p b{color:var(--txt);font-weight:600}
+
+  /* features */
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:48px}
+  .feat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px 24px;transition:.25s}
+  .feat:hover{border-color:rgba(34,211,238,.32);transform:translateY(-3px)}
+  .feat .ic{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,rgba(34,211,238,.16),rgba(167,139,250,.16));border:1px solid var(--border);display:grid;place-items:center;margin-bottom:18px;color:var(--accent)}
+  .feat h3{font-size:1.04rem;font-weight:700;margin-bottom:9px;letter-spacing:-.01em}
+  .feat p{color:var(--dim);font-size:.9rem;line-height:1.62}
+
+  /* steps */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:48px}
+  .step{position:relative;padding-left:0}
+  .step .num{font-family:var(--mono);font-size:.8rem;color:var(--accent);font-weight:700;margin-bottom:12px;display:block}
+  .step h3{font-size:1.06rem;font-weight:700;margin-bottom:9px}
+  .step p{color:var(--dim);font-size:.92rem}
+  .step .line{height:1px;background:linear-gradient(90deg,var(--accent),transparent);margin:18px 0}
+
+  /* use cases */
+  .cases{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
+  .case{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px}
+  .case .tag{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent2);margin-bottom:10px}
+  .case p{color:var(--dim);font-size:.9rem}
+
+  /* final cta */
+  .final{margin:0 auto;max-width:860px;text-align:center;background:linear-gradient(180deg,rgba(34,211,238,.07),rgba(167,139,250,.05));border:1px solid var(--border);border-radius:24px;padding:58px 32px}
+  .final h2{margin-bottom:14px}
+  .final .lead{margin:0 auto 30px}
+
+  footer{border-top:1px solid var(--border);padding:40px 0;margin-top:40px;position:relative;z-index:1}
+  footer .inner{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+  footer p{color:var(--dim);font-size:.85rem}
+  footer a{color:var(--dim);text-decoration:none;font-size:.85rem;margin-left:22px;transition:color .2s}
+  footer a:hover{color:var(--txt)}
+
+  @media(max-width:820px){
+    .navlinks{display:none}
+    .problem{grid-template-columns:1fr;gap:28px}
+    .features,.steps,.cases{grid-template-columns:1fr}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    header.hero{padding:60px 0 40px}
+    section{padding:62px 0}
+  }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<nav>
+  <div class="inner">
+    <a class="logo" href="#"><span class="mark">S</span>Scrapling</a>
+    <div class="navlinks">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#usecases">Use cases</a>
+    </div>
+    <a class="btn primary sm" href="#start">Request access</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="pill"><span class="dot"></span>Self-hosted - runs on your own infrastructure</div>
+    <h1>Turn any website into<br><span class="grad">structured data</span> automatically.</h1>
+    <p class="sub">Scrapling extracts clean, usable data from any site, finds local business leads at scale, and monitors pages on a schedule. One dashboard, no code, your data stays yours.</p>
+    <div class="cta-row">
+      <a class="btn primary" href="#start">Request access</a>
+      <a class="btn ghost" href="#features">See what it does</a>
+    </div>
+    <p class="hero-note">self-hosted &middot; no vendor lock-in &middot; export to CSV / Excel</p>
+
+    <div class="term">
+      <div class="bar">
+        <i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i>
+        <span class="t">scrapling - scrape</span>
+      </div>
+      <div class="body">
+<span class="c-dim">$</span> scrapling run <span class="c-ac">--target</span> listing \
+<span class="c-dim">    </span><span class="c-ac">--select</span> <span class="c-pu">"div.card"</span> <span class="c-ac">--export</span> csv
+<br>
+<span class="c-ok">+</span> fetching 1,240 pages <span class="c-dim">(parallel x20)</span><br>
+<span class="c-ok">+</span> extracted 4,912 records<br>
+<span class="c-ok">+</span> normalized &amp; deduplicated<br>
+<span class="c-ok">+</span> exported listing.csv <span class="c-dim">(218 KB)</span><br>
+<span class="c-dim">done in 42.7s</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="n">1M+</div><div class="l">Pages / day</div></div>
+    <div class="stat"><div class="n">20x</div><div class="l">Parallel workers</div></div>
+    <div class="stat"><div class="n">6</div><div class="l">Export formats</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Data leaves your box</div></div>
+  </div>
+</div>
+
+<section id="problem">
+  <div class="wrap">
+    <div class="problem">
+      <div>
+        <div class="eyebrow">The problem</div>
+        <h2>Getting data off the web is still painful.</h2>
+        <p class="lead">Teams spend hours copying, cleaning and re-checking the same pages by hand. Scrapers break, spreadsheets go stale, and nothing runs on its own.</p>
+      </div>
+      <div class="prob-list">
+        <div class="prob"><span class="x">&times;</span><p><b>Manual copy-paste.</b> Hours of work that breaks the moment a page changes.</p></div>
+        <div class="prob"><span class="x">&times;</span><p><b>Fragile scripts.</b> One-off scrapers that nobody can maintain.</p></div>
+        <div class="prob"><span class="x">&times;</span><p><b>Stale data.</b> Exports from last month, no idea if anything changed.</p></div>
+        <div class="prob solve"><span class="x">&#10003;</span><p><b>Scrapling does it for you.</b> Point it at a site, get structured data, keep it fresh on a schedule.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="center">
+      <div class="eyebrow">Capabilities</div>
+      <h2>Everything you need to collect data at scale.</h2>
+      <p class="lead">A single dashboard for extraction, lead generation, monitoring and export.</p>
+    </div>
+    <div class="features">
+      <div class="feat">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+        <h3>Universal scraper</h3>
+        <p>Extract from any page with simple CSS selectors, or let it detect the main content for you. Text, links, images, tables, attributes.</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
+        <h3>Local lead finder</h3>
+        <p>Pull business leads from map search results: names, addresses, phone numbers, categories and websites, ready for outreach.</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>Scheduled monitoring</h3>
+        <p>Run any scrape on an interval. Scrapling detects what changed since the last run and tells you, so you never chase stale data.</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+        <h3>Bulk operations</h3>
+        <p>Feed thousands of URLs at once. Parallel workers grind through the queue while you watch live progress and stats.</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></div>
+        <h3>Instant export</h3>
+        <p>Download results as CSV, Excel or JSON the second a job finishes. Clean columns, no post-processing needed.</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 3 3 10.5l6 2.5 2.5 6L21 3Z"/></svg></div>
+        <h3>Telegram alerts</h3>
+        <p>Get a message the moment a batch completes or a monitored page changes. Stay in the loop without watching a screen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="center">
+      <div class="eyebrow">How it works</div>
+      <h2>From URL to dataset in three steps.</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="num">01</span>
+        <h3>Point</h3>
+        <p>Give Scrapling a URL or a list of them. Pick what you want with a selector, or let auto-detect handle it.</p>
+        <div class="line"></div>
+      </div>
+      <div class="step">
+        <span class="num">02</span>
+        <h3>Collect</h3>
+        <p>Parallel workers fetch and parse everything. Watch progress live. Results are normalized and deduplicated automatically.</p>
+        <div class="line"></div>
+      </div>
+      <div class="step">
+        <span class="num">03</span>
+        <h3>Use</h3>
+        <p>Export to CSV or Excel, or schedule it to keep running. Get notified when something changes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="usecases">
+  <div class="wrap">
+    <div class="center">
+      <div class="eyebrow">Use cases</div>
+      <h2>Built for teams that live on fresh data.</h2>
+    </div>
+    <div class="cases">
+      <div class="case"><div class="tag">Sales</div><p>Build targeted lead lists from local business directories and map results, ready to import into your CRM.</p></div>
+      <div class="case"><div class="tag">Research</div><p>Collect product catalogs, pricing and listings across hundreds of pages into one clean dataset.</p></div>
+      <div class="case"><div class="tag">Monitoring</div><p>Track competitor pages, availability or policy changes and get alerted the moment something moves.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <div class="final">
+      <div class="eyebrow">Get started</div>
+      <h2>Bring the web into your workflow.</h2>
+      <p class="lead">Scrapling runs on your own infrastructure, so your data never leaves your control. Tell us what you want to collect and we will get you set up.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="mailto:founder@haaviq.dev">Request access</a>
+        <a class="btn ghost" href="#features">Explore features</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="inner">
+    <p>Scrapling &middot; Self-hosted web data platform</p>
+    <div>
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="mailto:founder@haaviq.dev">Contact</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
