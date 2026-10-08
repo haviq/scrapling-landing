@@ -121,6 +121,17 @@
   .final h2{margin-bottom:16px}
   .final .lead{margin:0 auto 30px}
 
+  .demo-box{margin:44px auto 0;max-width:760px;background:var(--light);border:1px solid var(--lightgray);border-radius:18px;padding:28px}
+  .demo-picks{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+  .demo-pick{padding:10px 18px;border-radius:999px;border:1px solid var(--lightgray);background:transparent;font-family:'Poppins',sans-serif;font-size:.88rem;font-weight:500;color:var(--dark);cursor:pointer;transition:.2s}
+  .demo-pick:hover{border-color:var(--orange)}
+  .demo-pick.on{background:var(--dark);color:var(--light);border-color:var(--dark)}
+  .demo-out{margin-top:22px;border-top:1px solid var(--lightgray);padding-top:20px}
+  .demo-meta{font-family:'Poppins',sans-serif;font-size:.82rem;font-weight:600;color:var(--green);margin-bottom:12px}
+  .demo-out pre{background:var(--dark);color:#d9d6cd;border-radius:12px;padding:18px 20px;font-family:'Poppins',monospace;font-size:.8rem;line-height:1.7;overflow-x:auto;max-height:340px}
+  .demo-status{margin-top:14px;font-size:.9rem;color:#6b6a65;min-height:22px}
+  .demo-status.err{color:#b91c1c}
+
   .faq{background:var(--light);border:1px solid var(--lightgray);border-radius:12px;padding:0 20px;transition:.2s}
   .faq[open]{border-color:var(--orange)}
   .faq summary{cursor:pointer;padding:18px 0;font-family:'Poppins',sans-serif;font-weight:500;font-size:1rem;list-style:none;display:flex;justify-content:space-between;align-items:center}
@@ -312,6 +323,25 @@
   </div>
 </section>
 
+<section id="demo">
+  <div class="wrap">
+    <div class="center">
+      <div class="eyebrow">Try it live</div>
+      <h2>See the AI extract real data, right now.</h2>
+      <p class="lead">Pick a page. The model reads it and returns structured data. No signup, no install.</p>
+    </div>
+    <div class="demo-box">
+      <div class="demo-picks" id="demoPicks"></div>
+      <button class="btn accent" id="demoRun" type="button">Run extraction</button>
+      <div class="demo-out" id="demoOut" hidden>
+        <div class="demo-meta" id="demoMeta"></div>
+        <pre id="demoJson"></pre>
+      </div>
+      <div class="demo-status" id="demoStatus"></div>
+    </div>
+  </div>
+</section>
+
 <section id="stack" style="padding-top:0">
   <div class="wrap">
     <div class="center">
@@ -364,12 +394,60 @@
     <div>
       <a href="#features">Features</a>
       <a href="#ai">AI</a>
+      <a href="terms.html">Terms</a>
       <a href="mailto:founder@haaviq.dev">Contact</a>
     </div>
   </div>
 </footer>
 
 <script>
+  (function(){
+    var API = 'https://scrapdash.haviq.dev';
+    var picks = document.getElementById('demoPicks');
+    var runBtn = document.getElementById('demoRun');
+    var out = document.getElementById('demoOut');
+    var meta = document.getElementById('demoMeta');
+    var json = document.getElementById('demoJson');
+    var status = document.getElementById('demoStatus');
+    if(!picks) return;
+    var samples = [], active = null;
+
+    fetch(API + '/api/demo/samples').then(function(r){return r.json();}).then(function(list){
+      samples = list;
+      list.forEach(function(s,i){
+        var b = document.createElement('button');
+        b.type='button'; b.className='demo-pick'+(i===0?' on':'');
+        b.textContent = s.label;
+        b.addEventListener('click', function(){
+          active = s;
+          document.querySelectorAll('.demo-pick').forEach(function(x){x.classList.remove('on');});
+          b.classList.add('on');
+          out.hidden = true; status.textContent='';
+        });
+        picks.appendChild(b);
+        if(i===0) active = s;
+      });
+    }).catch(function(){ status.textContent = 'Demo service offline right now.'; });
+
+    runBtn.addEventListener('click', function(){
+      if(!active) return;
+      runBtn.disabled = true; out.hidden = true;
+      status.className='demo-status'; status.textContent='Reading the page and extracting...';
+      fetch(API + '/api/demo/extract', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sample: active.id})})
+        .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+        .then(function(res){
+          runBtn.disabled = false;
+          if(!res.ok){ status.className='demo-status err'; status.textContent = (res.j && res.j.detail) ? res.j.detail : 'Something went wrong.'; return; }
+          var d = res.j;
+          status.textContent = '';
+          meta.textContent = 'Extracted ' + d.count + ' records from ' + d.label;
+          json.textContent = JSON.stringify(d.items, null, 2);
+          out.hidden = false;
+        })
+        .catch(function(){ runBtn.disabled = false; status.className='demo-status err'; status.textContent='Could not reach the demo service.'; });
+    });
+  })();
+
   (function(){
     var els = document.querySelectorAll('section .center, section .problem > div, .feat, .step, .case, .ai-item, .stats, .final, .hero-img');
     els.forEach(function(el){ el.classList.add('reveal'); });
